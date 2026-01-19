@@ -1,0 +1,140 @@
+/* ========================================
+   SHARED STYLES - BankBackend Dashboard
+   ======================================== */
+
+/* Global Styles */
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    height: 100vh;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: #2c3e50;
+    color: white;
+    padding-top: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    text-align: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #34495e;
+    margin-bottom: 20px;
+}
+
+.sidebar a {
+    padding: 15px 25px;
+    text-decoration: none;
+    font-size: 15px;
+    color: #bdc3c7;
+    display: block;
+    transition: 0.3s;
+    border-left: 4px solid transparent;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+    color: white;
+    background: #34495e;
+    border-left-color: #3498db;
+}
+
+/* Language Toggle */
+.lang-toggle {
+    margin-top: auto;
+    padding: 15px;
+    border-top: 1px solid #34495e;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.lang-btn {
+    background: transparent;
+    border: 2px solid #3498db;
+    color: #3498db;
+    padding: 6px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.3s;
+}
+
+.lang-btn:hover,
+.lang-btn.active {
+    background: #3498db;
+    color: white;
+}
+
+/* Main Content */
+.main-content {
+    margin-left: 250px;
+    padding: 30px;
+}
+
+/* Card Styles */
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background: white;
+    border-bottom: 1px solid #eee;
+    font-weight: 600;
+    padding: 15px 20px;
+    border-radius: 15px 15px 0 0 !important;
+}
+
+/* Modal Styles */
+.modal-header {
+    background: #3498db;
+    color: white;
+}
+
+.modal-content {
+    border-radius: 15px;
+}
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+/* Table Styles */
+.table {
+    margin-bottom: 0;
+}
+
+.table thead {
+    background: #f8f9fa;
+}
+
+/* Utility Classes */
+.text-muted {
+    color: #6c757d !important;
+}
+
+.fw-bold {
+    font-weight: 600 !important;
+}
+
+.opacity-75 {
+    opacity: 0.75;
+}
+
+.opacity-50 {
+    opacity: 0.5;
+}

@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BankBackend - Admin Paneli</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="/js/lang_utils.js"></script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .sidebar {
+            height: 100vh;
+            width: 260px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #2c3e50;
+            color: white;
+            padding-top: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #34495e;
+            margin-bottom: 20px;
+        }
+
+        .sidebar a {
+            padding: 15px 25px;
+            text-decoration: none;
+            font-size: 15px;
+            color: #bdc3c7;
+            display: block;
+            transition: 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            color: white;
+            background: #34495e;
+            border-left-color: #3498db;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.3s;
+            border-left: 5px solid #3498db;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #edf2f7;
+            padding: 20px;
+            font-weight: 600;
+            border-radius: 15px 15px 0 0 !important;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-purple {
+            background: #8e44ad;
+            color: white;
+        }
+
+        .btn-purple:hover {
+            background: #732d91;
+            color: white;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        .lang-toggle {
+            margin-top: auto;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 15px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: 1px solid #7f8c8d;
+            color: #bdc3c7;
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .lang-btn.active,
+        .lang-btn:hover {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="fas fa-shield-alt me-2"></i>Admin Panel</h4>
+        </div>
+        <a href="#" class="nav-link active" onclick="showSection('dashboard')"><i
+                class="fas fa-tachometer-alt me-2"></i><span data-lang="admin.overview">Genel Bakış</span></a>
+        <a href="#" class="nav-link" onclick="showSection('customers')"><i class="fas fa-users me-2"></i><span
+                data-lang="admin.customers">Müşteriler</span></a>
+        <a href="#" class="nav-link" onclick="showSection('risk')"><i class="fas fa-exclamation-triangle me-2"></i><span
+                data-lang="admin.riskDesk">Risk Masası</span></a>
+
+        <div class="lang-toggle">
+            <button class="lang-btn" data-lang-code="tr" onclick="setLang('tr')">TR</button>
+            <button class="lang-btn" data-lang-code="en" onclick="setLang('en')">EN</button>
+        </div>
+
+        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i><span data-lang="admin.logout">Çıkış
+                Yap</span></a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h2 class="fw-bold text-dark" data-lang="admin.header">Yönetim Paneli</h2>
+                <p class="text-muted" data-lang="admin.subtitle">Banka sistem durum özeti ve kontrolleri</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-dark p-2" id="adminRoleBadge">ADMIN</span>
+                <div class="bg-white p-2 rounded-circle shadow-sm">
+                    <i class="fas fa-user-tie fa-2x text-secondary"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: DASHBOARD -->
+        <div id="section-dashboard">
+            <!-- İstatistik Kartları -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card" style="border-left-color: #3498db;">
+                        <div>
+                            <h6 class="text-muted mb-1" data-lang="stats.totalCustomers">Toplam Müşteri</h6>
+                            <h3 class="fw-bold mb-0" id="statTotalUser">-</h3>
+                        </div>
+                        <div class="stat-icon"><i class="fas fa-users text-primary"></i></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card" style="border-left-color: #2ecc71;">
+                        <div>
+                            <h6 class="text-muted mb-1" data-lang="stats.totalDeposit">Toplam Mevduat</h6>
+                            <h4 class="fw-bold mb-0 text-success" id="statTotalMoney">-</h4>
+                        </div>
+                        <div class="stat-icon"><i class="fas fa-money-bill-wave text-success"></i></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card" style="border-left-color: #f1c40f;">
+                        <div>
+                            <h6 class="text-muted mb-1" data-lang="stats.transactionVolume">İşlem Hacmi</h6>
+                            <h3 class="fw-bold mb-0" id="statTotalTx">-</h3>
+                        </div>
+                        <div class="stat-icon"><i class="fas fa-exchange-alt text-warning"></i></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card" style="border-left-color: #e74c3c;">
+                        <div>
+                            <h6 class="text-muted mb-1" data-lang="stats.riskEvents">Riskli Olay</h6>
+                            <h3 class="fw-bold mb-0 text-danger" id="statTotalRisk">-</h3>
+                        </div>
+                        <div class="stat-icon"><i class="fas fa-bell text-danger"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grafik -->
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-chart-line me-2"></i><span data-lang="stats.systemActivity">Sistem
+                            Aktivitesi</span></span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="dashboardChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: CUSTOMERS -->
+        <div id="section-customers" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <span data-lang="customer.management">Müşteri Yönetimi</span>
+                    <div>
+                        <input type="text" id="searchInput"
+                            class="form-control form-control-sm d-inline-block w-auto me-2"
+                            placeholder="Ad, TC veya ID (örn: 5)...">
+                        <button class="btn btn-sm btn-primary" onclick="searchCustomers()"><i class="fas fa-search"></i>
+                            <span data-lang="customer.searchBtn">Ara</span></button>
+                        <button class="btn btn-sm btn-success ms-2" onclick="openAddUserModal()"><i
+                                class="fas fa-plus"></i> <span data-lang="customer.addNew">Yeni Ekle</span></button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4" data-lang="customer.id">ID</th>
+                                <th data-lang="customer.tc">TC Kimlik</th>
+                                <th data-lang="customer.name">Ad Soyad</th>
+                                <th data-lang="customer.role">Rol</th>
+                                <th data-lang="customer.registerDate">Kayıt Tarihi</th>
+                                <th class="text-end pe-4" data-lang="customer.actions">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: RISK DESK -->
+        <div id="section-risk" style="display: none;">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <span data-lang="risk.title"><i class="fas fa-shield-alt me-2"></i>Şüpheli İşlem Logları</span>
+                    <button class="btn btn-sm btn-light text-danger" onclick="fetchRiskLogs()"><i
+                            class="fas fa-sync"></i> <span data-lang="risk.refresh">Yenile</span></button>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-3" data-lang="risk.eventId">ID</th>
+                                <th data-lang="risk.accountId">Hesap ID</th>
+                                <th data-lang="risk.event">Olay Açıklaması</th>
+                                <th data-lang="risk.date">Tarih</th>
+                            </tr>
+                        </thead>
+                        <tbody id="riskTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL: ADD CUSTOMER -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" data-lang="modal.addCustomer">Yeni Müşteri Ekle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addUserForm">
+                        <div class="mb-3">
+                            <label class="form-label">TC Kimlik No</label>
+                            <input type="text" class="form-control" id="newTc" maxlength="11" minlength="11" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Ad</label>
+                                <input type="text" class="form-control" id="newAd" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Soyad</label>
+                                <input type="text" class="form-control" id="newSoyad" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Şifre</label>
+                            <input type="text" class="form-control" id="newSifre" placeholder="Boş bırakılırsa TC olur"
+                                minlength="6">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Rol</label>
+                            <select class="form-select" id="newRol">
+                                <option value="MUSTERI">Müşteri</option>
+                                <option value="ADMIN">Admin</option>
+                                <option value="PATRON">Patron</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" data-lang="modal.save">Kaydet</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CUSTOMER DETAIL & ROLE EDIT -->
+    <div class="modal fade" id="customerDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title" id="detailModalTitle" data-lang="detail.title">Müşteri Yönetimi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+
+                    <!-- Role Management Section -->
+                    <div class="card mb-4 border-warning bg-light">
+                        <div class="card-body d-flex align-items-center justify-content-between py-2">
+                            <div>
+                                <i class="fas fa-user-tag text-warning me-2"></i>
+                                <span class="fw-bold" data-lang="detail.userRole">Kullanıcı Rolü:</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <select id="editUserRole" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="MUSTERI">MUSTERI</option>
+                                    <option value="ADMIN">ADMIN</option>
+                                    <option value="PATRON">PATRON</option>
+                                </select>
+                                <button class="btn btn-sm btn-warning text-dark" onclick="updateUserRole()"><span
+                                        data-lang="detail.update">Güncelle</span></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ul class="nav nav-tabs mb-3" id="detailTabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab"
+                                data-bs-target="#tab-accounts">Hesaplar</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-history">İşlem
+                                Geçmişi</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- Accounts -->
+                        <div class="tab-pane fade show active" id="tab-accounts">
+                            <div id="accountsLoader" class="text-center py-3">
+                                <div class="spinner-border"></div>
+                            </div>
+                            <div id="accountsContainer" class="row g-3"></div>
+                        </div>
+
+                        <!-- History -->
+                        <div class="tab-pane fade" id="tab-history">
+                            <div class="table-responsive" style="max-height: 300px; overflow-y:auto;">
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th data-lang="detail.date">Tarih</th>
+                                            <th data-lang="detail.description">Açıklama</th>
+                                            <th data-lang="detail.amount">Tutar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="historyTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button class="btn btn-outline-danger" onclick="deleteCustomer()">
+                        <i class="fas fa-trash-alt me-1"></i> <span data-lang="detail.delete">Kullanıcıyı Sil</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        data-lang="modal.close">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // --- AUTH CHECK ---
+        const userStr = localStorage.getItem('user');
+        let token = null;
+
+        if (!userStr) {
+            window.location.href = 'index.html';
+        } else {
+            const currentUser = JSON.parse(userStr);
+            const role = (currentUser.Rol || currentUser.rol || '').trim().toUpperCase();
+            token = currentUser.Token || currentUser.token;
+
+            document.getElementById('adminRoleBadge').textContent = role;
+
+            if (role !== 'ADMIN' && role !== 'PATRON') {
+                alert(t('alert.unauthorized').replace('{role}', role));
+                localStorage.removeItem('user');
+                window.location.href = 'index.html';
+            }
+        }
+
+        async function authFetch(url, options = {}) {
+            if (!options.headers) options.headers = {};
+            if (options.headers instanceof Headers) {
+                options.headers.append('Authorization', `Bearer ${token}`);
+            } else {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+            return fetch(url, options);
+        }
+
+        // --- GLOBAL VARS ---
+        let selectedCustomerId = null;
+        let dashboardChart = null;
+
+        // --- INIT ---
+        window.onload = function () {
+            fetchStats();
+            initChart();
+            fetchCustomers();
+
+            // Re-render dynamic content on language change
+            window.addEventListener('lang-change', () => {
+                const search = document.getElementById('searchInput').value;
+                fetchStats();
+                initChart(); // Re-draw chart with new labels
+                fetchCustomers(search);
+                // If risk desk is active, refresh it too
+                if (document.getElementById('section-risk').style.display === 'block') {
+                    fetchRiskLogs();
+                }
+            });
+        };
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.main-content > div[id^="section-"]').forEach(el => el.style.display = 'none');
+            document.getElementById('section-' + sectionId).style.display = 'block';
+
+            document.querySelectorAll('.sidebar .nav-link').forEach(el => el.classList.remove('active'));
+            event.target.closest('.nav-link').classList.add('active');
+
+            if (sectionId === 'risk') fetchRiskLogs();
+        }
+
+        // --- STATS & CHART ---
+        async function fetchStats() {
+            try {
+                const res = await authFetch('/api/Musterilers/Istatistik');
+                const data = await res.json();
+
+                document.getElementById('statTotalUser').textContent = data.toplamMusteri;
+                document.getElementById('statTotalMoney').textContent = '₺' + data.toplamPara.toLocaleString('tr-TR');
+                document.getElementById('statTotalTx').textContent = data.toplamIslem;
+                document.getElementById('statTotalRisk').textContent = data.toplamRisk;
+            } catch (e) { console.error(e); }
+        }
+
+        async function initChart() {
+            // Destroy existing chart if any to avoid overlay
+            if (dashboardChart) {
+                dashboardChart.destroy();
+            }
+
+            const ctx = document.getElementById('dashboardChart').getContext('2d');
+            const locale = getCurrentLang() === 'tr' ? 'tr-TR' : 'en-US';
+
+            // Last 7 days labels
+            const labels = [];
+            const dataMap = {};
+            const today = new Date();
+            const monthFormat = getCurrentLang() === 'tr' ? 'short' : 'short'; // both short is fine
+
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(today.getDate() - i);
+                const dateKey = d.toISOString().split('T')[0];
+                // Localized label (e.g., 25 Oct)
+                const label = d.toLocaleDateString(locale, { day: 'numeric', month: monthFormat });
+                labels.push({ key: dateKey, label: label });
+                dataMap[dateKey] = 0;
+            }
+
+            try {
+                // Backend calls
+                const res = await authFetch('/api/IslemHareketleri/GunlukIslemHacmi');
+                if (res.ok) {
+                    const apiData = await res.json();
+                    apiData.forEach(item => {
+                        // Gelen tarihi YYYY-MM-DD formatına çevirip eşleştir
+                        const isoDate = item.tarih.split('T')[0];
+                        if (dataMap.hasOwnProperty(isoDate)) {
+                            dataMap[isoDate] = item.islemSayisi;
+                        }
+                    });
+                }
+            } catch (e) { console.error("Grafik verisi alınamadı", e); }
+
+            // Chart verilerini hazırla
+            const chartData = labels.map(l => dataMap[l.key]);
+            const chartLabels = labels.map(l => l.label);
+
+            dashboardChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: t('stats.transactionVolume'),
+                        data: chartData,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#3498db',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 } // Tam sayılar
+                        }
+                    },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        }
+
+        // --- CUSTOMERS ---
+        async function fetchCustomers(term = '') {
+            try {
+                const url = term ? `/api/Musterilers/Ara?term=${term}` : '/api/Musterilers';
+                const res = await authFetch(url);
+                const customers = await res.json();
+                renderCustomers(customers);
+            } catch (e) { console.error(e); }
+        }
+
+        function searchCustomers() {
+            const term = document.getElementById('searchInput').value;
+            fetchCustomers(term);
+        }
+
+        function renderCustomers(list) {
+            // FIX: Listeyi her zaman ID'ye göre sırala (Küçükten büyüğe)
+            list.sort((a, b) => a.musteriId - b.musteriId);
+
+            const tbody = document.getElementById('customerTableBody');
+            tbody.innerHTML = '';
+            list.forEach(c => {
+                const tr = document.createElement('tr');
+                // FIX: Objenin kendisi yerine ID'yi gönderiyoruz. Böylece her tıklamada güncel veri çekilir.
+                tr.onclick = (e) => { if (!e.target.closest('button')) openCustomerDetailById(c.musteriId); };
+                tr.innerHTML = `
+                    <td class="ps-4 fw-bold text-muted">#${c.musteriId}</td>
+                    <td>${c.tcKimlikNo}</td>
+                    <td><span class="fw-bold text-dark">${c.ad} ${c.soyad}</span></td>
+                    <td><span class="badge ${c.rol === 'ADMIN' ? 'bg-dark' : (c.rol === 'PATRON' ? 'bg-warning text-dark' : 'bg-info')}">${t('role.' + (c.rol || 'musteri').toLowerCase())}</span></td>
+                    <td class="text-muted small">${new Date(c.kayitTarihi).toLocaleDateString()}</td>
+                    <td class="text-end pe-4">
+                        <button class="btn btn-sm btn-outline-primary" onclick="openCustomerDetailById(${c.musteriId})"><i class="fas fa-eye"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- ADD USER ---
+        function openAddUserModal() {
+            new bootstrap.Modal(document.getElementById('addUserModal')).show();
+        }
+
+        document.getElementById('addUserForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const data = {
+                tcKimlikNo: document.getElementById('newTc').value,
+                ad: document.getElementById('newAd').value,
+                soyad: document.getElementById('newSoyad').value,
+                sifre: document.getElementById('newSifre').value || document.getElementById('newTc').value,
+                rol: document.getElementById('newRol').value
+            };
+            try {
+                const res = await authFetch('/api/Musterilers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    alert(t('alert.userAdded'));
+                    bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+                    fetchCustomers();
+                    fetchStats();
+                    document.getElementById('addUserForm').reset();
+                } else {
+                    const text = await res.text();
+                    try {
+                        const errObj = JSON.parse(text);
+                        if (errObj.errors) {
+                            // Extract validation errors
+                            const msgs = Object.values(errObj.errors).flat().join('\n');
+                            alert("Validasyon Hatası:\n" + msgs);
+                        } else {
+                            alert("Hata: " + (errObj.title || text));
+                        }
+                    } catch {
+                        alert("Hata oluştu: " + text);
+                    }
+                }
+            } catch (e) { console.error(e); alert("Beklenmeyen hata: " + e); }
+        });
+
+        // --- DETAIL & ROLE UPDATE ---
+        async function openCustomerDetail(c) {
+            selectedCustomerId = c.musteriId;
+            document.getElementById('detailModalTitle').textContent = `${c.ad} ${c.soyad} (#${c.musteriId})`;
+
+            // Set Role Dropdown
+            document.getElementById('editUserRole').value = (c.rol || 'MUSTERI').toUpperCase();
+
+            const triggerEl = document.querySelector('#detailTabs button[data-bs-target="#tab-accounts"]');
+            bootstrap.Tab.getInstance(triggerEl)?.show() || new bootstrap.Tab(triggerEl).show();
+
+            new bootstrap.Modal(document.getElementById('customerDetailModal')).show();
+
+            fetchCustomerAccounts(c.musteriId);
+            fetchCustomerHistory(c.musteriId);
+        }
+
+        function openCustomerDetailById(id) {
+            authFetch(`/api/Musterilers/${id}`).then(r => r.json()).then(c => openCustomerDetail(c));
+        }
+
+        async function updateUserRole() {
+            if (!selectedCustomerId) return;
+            const newRole = document.getElementById('editUserRole').value;
+
+            if (!confirm(t('alert.confirmRole').replace('{role}', newRole))) return;
+
+            try {
+                const res = await authFetch(`/api/Musterilers/${selectedCustomerId}/Rol`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newRole)
+                });
+
+                if (res.ok) {
+                    alert(t('alert.roleUpdated'));
+                    
+                    // Modaldaki seçili müşterinin rolünü anlık güncelle (Görsel tutarlılık için)
+                    const roleBadge = document.querySelector(`#customerTableBody tr[onclick*="openCustomerDetail"] td span.badge`);
+                    // Not: Tabloyu yenilemek en güvenlisi
+                    fetchCustomers(); 
+                    
+                    // Eğer arama kutusunda bir şey varsa onu da dikkate alarak yenile
+                    const term = document.getElementById('searchInput').value;
+                    if(term) fetchCustomers(term);
+                } else {
+                    alert(t('alert.updateFailed'));
+                }
+            } catch (e) { console.error(e); alert("Hata"); }
+        }
+
+        // --- ACCOUNTS & HISTORY ---
+        async function fetchCustomerAccounts(id) {
+            const container = document.getElementById('accountsContainer');
+            const loader = document.getElementById('accountsLoader');
+            loader.style.display = 'block';
+            container.innerHTML = '';
+
+            try {
+                const res = await authFetch(`/api/Hesaplars/Musteri/${id}`);
+                loader.style.display = 'none';
+                if (res.status === 404) {
+                    container.innerHTML = '<div class="alert alert-warning w-100">Hesap bulunamadı.</div>'; return;
+                }
+                const accounts = await res.json();
+                accounts.forEach(acc => {
+                    // Casing check
+                    const aId = acc.HesapId || acc.hesapId;
+                    const aNo = acc.HesapNo || acc.hesapNo;
+                    const aBal = acc.Bakiye || acc.bakiye;
+
+                    const html = `
+                    <div class="col-md-6">
+                        <div class="card h-100 border-secondary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                     <h6 class="fw-bold text-dark">${aNo}</h6>
+                                     <small class="text-muted">#${aId}</small>
+                                </div>
+                                <h3 class="my-3 text-primary">₺${aBal}</h3>
+                                <div class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteAccount(${aId})">
+                                        <i class="fas fa-trash"></i> Sil
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+            } catch (e) { loader.style.display = 'none'; }
+        }
+
+        async function deleteAccount(hesapId) {
+            if (!confirm(t('alert.confirmDelete'))) return;
+            try {
+                const res = await authFetch(`/api/Hesaplars/${hesapId}`, { method: 'DELETE' });
+                if (res.ok) { alert(t('alert.deleted')); fetchCustomerAccounts(selectedCustomerId); fetchStats(); }
+            } catch (e) { console.error(e); }
+        }
+
+        async function fetchCustomerHistory(id) {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '<tr><td colspan="3">Yükleniyor...</td></tr>';
+            try {
+                const res = await authFetch(`/api/IslemHareketleri/Musteri/${id}`);
+                if (!res.ok) { tbody.innerHTML = '<tr><td colspan="3">İşlem yok.</td></tr>'; return; }
+                const data = await res.json();
+                tbody.innerHTML = '';
+                data.forEach(x => {
+                    const desc = localizeTransaction(x.aciklama);
+                    tbody.insertAdjacentHTML('beforeend', `<tr><td>${new Date(x.tarih).toLocaleDateString()}</td><td>${desc}</td><td>₺${x.miktar}</td></tr>`);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function deleteCustomer() {
+            if (!confirm(t('alert.confirmDeleteUser'))) return;
+            try {
+                const res = await authFetch(`/api/Musterilers/${selectedCustomerId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert(t('alert.deleted'));
+                    bootstrap.Modal.getInstance(document.getElementById('customerDetailModal')).hide();
+                    fetchCustomers();
+                    fetchStats();
+                } else alert(t('alert.deleteFailed'));
+            } catch (e) { console.error(e); }
+        }
+
+        // --- RISK LOGS ---
+        async function fetchRiskLogs() {
+            const tbody = document.getElementById('riskTableBody');
+            tbody.innerHTML = '<tr><td colspan="4">Yükleniyor...</td></tr>';
+            try {
+                const res = await fetch('/api/RiskMasasi');
+                const logs = await res.json();
+                tbody.innerHTML = '';
+                logs.forEach(l => {
+                    // Hesap ID null ise tire göster
+                    const hesapGosterim = l.hesapId
+                        ? `<span class="fw-bold text-dark">#${l.hesapId}</span>`
+                        : `<span class="text-muted">-</span>`;
+
+                    tbody.insertAdjacentHTML('beforeend', `
+                        <tr>
+                            <td class="ps-3">${l.riskId}</td>
+                            <td>${hesapGosterim}</td>
+                            <td class="text-danger fw-bold">${localizeTransaction(l.supheliOlay)}</td>
+                            <td>${new Date(l.olayTarihi).toLocaleString()}</td>
+                        </tr>
+                     `);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        function logout() { localStorage.removeItem('user'); window.location.href = 'index.html'; }
+    </script>
+</body>
+
+</html>

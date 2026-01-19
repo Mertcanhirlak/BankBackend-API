@@ -1,0 +1,29 @@
+# Development Mode: Redis + PostgreSQL
+# Usage: docker-compose -f docker-compose.dev.yml up -d
+# Run API from Visual Studio (F5), it will connect to these containers.
+
+services:
+  bank-db-dev:
+    image: postgres:15
+    container_name: bank-db-dev
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: bank_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-data-dev:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./seed_data.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    restart: unless-stopped
+
+  redis:
+    image: redis:latest
+    container_name: bank-redis-dev
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes:
+  db-data-dev:

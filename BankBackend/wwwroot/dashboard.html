@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BankBackend - Panel</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f7f6;
+        }
+
+        .sidebar {
+            height: 100vh;
+            width: 250px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #2c3e50;
+            color: white;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar a {
+            padding: 15px 25px;
+            text-decoration: none;
+            font-size: 16px;
+            color: #b8c7ce;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            color: white;
+            background: #34495e;
+            border-left: 4px solid #3498db;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #34495e;
+            margin-bottom: 20px;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #eee;
+            font-weight: 600;
+            padding: 15px 20px;
+            border-radius: 10px 10px 0 0 !important;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #3498db, #8e44ad);
+            color: white;
+        }
+
+        .balance-amount {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .modal-header {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-transfer {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-transfer:hover {
+            background: #2980b9;
+            color: white;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .lang-toggle {
+            margin-top: auto;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 15px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: 1px solid #7f8c8d;
+            color: #bdc3c7;
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .lang-btn.active,
+        .lang-btn:hover {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+    </style>
+    <script src="/js/lang_utils.js"></script>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="fas fa-university me-2"></i>BankApp</h4>
+        </div>
+        <a href="#" class="active"><i class="fas fa-home me-2"></i><span data-lang="admin.overview">Ana Sayfa</span></a>
+        <a href="#" onclick="showTransferModal()"><i class="fas fa-exchange-alt me-2"></i><span
+                data-lang="transfer.title">Para Transferi</span></a>
+
+        <!-- Language Toggle -->
+        <div class="lang-toggle">
+            <button class="lang-btn" data-lang-code="tr" onclick="setLang('tr')">TR</button>
+            <button class="lang-btn" data-lang-code="en" onclick="setLang('en')">EN</button>
+        </div>
+        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i><span data-lang="admin.logout">Çıkış
+                Yap</span></a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><span data-lang="dash.welcome">Hoşgeldiniz</span>, <span id="userName">...</span></h2>
+            <span class="badge bg-success p-2" id="userRole" data-lang="dash.customer">Müşteri</span>
+        </div>
+
+        <!-- Accounts Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="text-muted m-0" data-lang="dash.myAccounts">Hesaplarım</h5>
+            <button class="btn btn-sm btn-outline-primary" onclick="createNewAccount()">
+                <i class="fas fa-plus me-1"></i><span data-lang="dash.newAccount">Yeni Hesap Aç</span>
+            </button>
+        </div>
+
+        <div class="row" id="accountsList">
+            <div class="col-12 text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Yükleniyor...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Assistant Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm"
+                    style="background: linear-gradient(to right, #6a11cb 0%, #2575fc 100%); color: white;">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1"><i class="fas fa-robot me-2"></i><span data-lang="ai.title">Akıllı Finans
+                                    Asistanı</span></h5>
+                            <p class="mb-0 small opacity-75" data-lang="ai.subtitle">Harcamalarınızı analiz edip size
+                                özel tasarruf tavsiyeleri alabilirsiniz.</p>
+                        </div>
+                        <button class="btn btn-light text-primary fw-bold" onclick="askAiAdvisor()" id="btnAiAsk">
+                            <i class="fas fa-magic me-2"></i><span data-lang="ai.analyze">Analiz Et</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI Result Card (Hidden by default) -->
+                <div class="card mt-3 border-0 shadow-sm d-none" id="aiResultCard">
+                    <div class="card-header bg-white text-primary">
+                        <i class="fas fa-lightbulb me-2"></i><span data-lang="ai.resultTitle">Analiz Sonucu</span>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title text-dark" id="aiTitle">...</h5>
+                        <p class="card-text text-muted" id="aiGeneralComment">...</p>
+                        <hr>
+                        <h6 class="text-secondary"><i class="fas fa-list-ul me-2"></i><span
+                                data-lang="ai.recommendations">Tavsiyeler:</span></h6>
+                        <ul class="list-group list-group-flush" id="aiAdviceList">
+                            <!-- JS ile doldurulacak -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layout Row: Transactions & Chart -->
+        <div class="row mt-5">
+            <!-- Transactions Table (Sol Taraf) -->
+            <div class="col-md-8">
+                <h5 class="mb-3 text-muted">Son İşlemler</h5>
+                <div class="card h-100">
+                    <div class="card-body">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th data-lang="trans.date">Tarih</th>
+                                    <th data-lang="trans.description">Açıklama</th>
+                                    <th data-lang="trans.amount">Tutar</th>
+                                    <th data-lang="trans.status">Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsList">
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">İşlem geçmişi yükleniyor...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart (Sağ Taraf) -->
+            <div class="col-md-4">
+                <h5 class="mb-3 text-muted" data-lang="chart.title">Finansal Özet</h5>
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                        <div class="chart-container">
+                            <canvas id="financeChart"></canvas>
+                        </div>
+                        <div class="mt-3 text-center small text-muted" data-lang="chart.subtitle">
+                            Son işlemlere göre dağılım
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer Modal -->
+    <div class="modal fade" id="transferModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" data-lang="transfer.title">Para Transferi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="transferForm">
+                        <div class="mb-3">
+                            <label class="form-label" data-lang="transfer.sender">Gönderen Hesap</label>
+                            <select class="form-select" id="gonderenHesapId" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-lang="transfer.receiver">Alıcı Hesap ID</label>
+                            <input type="number" class="form-control" id="aliciHesapId"
+                                data-lang="transfer.receiverPlaceholder" placeholder="Örn: 102" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-lang="transfer.amount">Tutar (TL)</label>
+                            <input type="number" class="form-control" id="miktar" min="1" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-lang="transfer.description">Açıklama</label>
+                            <input type="text" class="form-control" id="aciklama" data-lang="transfer.descPlaceholder"
+                                placeholder="Kira ödemesi vb.">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        data-lang="transfer.cancel">İptal</button>
+                    <button type="button" class="btn btn-transfer" onclick="makeTransfer()"
+                        data-lang="transfer.submit">Transfer Yap</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ATM Modal -->
+    <div class="modal fade" id="atmModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-dark"><i class="fas fa-money-bill-wave me-2"></i>ATM İşlemi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="atmHesapId">
+                    <div class="d-grid gap-2 mb-3">
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="atmIslemTuru" id="radioYatir" value="yatir"
+                                checked>
+                            <label class="btn btn-outline-success" for="radioYatir" data-lang="atm.deposit">Para
+                                Yatır</label>
+
+                            <input type="radio" class="btn-check" name="atmIslemTuru" id="radioCek" value="cek">
+                            <label class="btn btn-outline-danger" for="radioCek" data-lang="atm.withdraw">Para
+                                Çek</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" data-lang="atm.amount">Tutar</label>
+                        <input type="number" class="form-control" id="atmMiktar" placeholder="0.00">
+                    </div>
+                    <button type="button" class="btn btn-warning w-100" onclick="submitAtmTransaction()"
+                        data-lang="atm.confirm">İşlemi Onayla</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const userStr = localStorage.getItem('user');
+        if (!userStr) window.location.href = 'index.html';
+
+        let user;
+        try {
+            user = JSON.parse(userStr);
+        } catch (e) {
+            console.error("User data parse error", e);
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        // Property Casing Helper (Backend camelCase veya PascalCase dönebilir)
+        const token = user.Token || user.token;
+        const musteriId = user.MusteriId || user.musteriId;
+        const ad = user.Ad || user.ad;
+        const soyad = user.Soyad || user.soyad;
+        const rol = user.Rol || user.rol || 'Müşteri';
+
+        // Token Kontrolü
+        if (!token) {
+            alert(t('session.expired'));
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        // Apply translations initially and update dynamic content
+        function updateDynamicContent() {
+            document.getElementById('userName').textContent = `${ad} ${soyad}`;
+            document.getElementById('userRole').textContent = rol;
+            // Re-fetch data to re-render dynamic content with new language
+            fetchAccounts();
+            fetchTransactions();
+        }
+
+        // Listen to language changes to re-apply dynamic content if needed
+        // (Though applyTranslations handles static data-lang, we handle dynamic strings here)
+        window.addEventListener('lang-change', updateDynamicContent);
+
+        updateDynamicContent();
+
+        let myAccounts = [];
+        let myChart = null;
+
+        window.onload = function () {
+            fetchAccounts();
+            fetchTransactions();
+        };
+
+        // --- HESAPLAR ---
+        async function fetchAccounts() {
+            try {
+                const response = await fetch(`/api/Hesaplars/Musteri/${musteriId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) {
+                    if (response.status === 404) myAccounts = [];
+                    else if (response.status === 401) {
+                        console.warn("Unauthorized access to accounts.");
+                        // 401 alırsak hemen atmayalım, belki token süresi dolmuştur ama kullanıcı işlem yapana kadar bekleyebiliriz veya refresh token mekanizması eklenebilir.
+                        return;
+                    }
+                    else throw new Error("Veri çekilemedi: " + response.statusText);
+                } else {
+                    myAccounts = await response.json();
+                }
+                renderAccounts();
+                updateTransferDropdown();
+            } catch (error) {
+                console.error(error);
+                document.getElementById('accountsList').innerHTML = '<div class="alert alert-danger">Hesap bilgileri yüklenemedi.</div>';
+            }
+        }
+
+        function renderAccounts() {
+            const container = document.getElementById('accountsList');
+            container.innerHTML = '';
+            if (!myAccounts || myAccounts.length === 0) {
+                container.innerHTML = `<div class="col-12"><div class="alert alert-info">${t('dash.noAccounts')}</div></div>`;
+                return;
+            }
+            myAccounts.forEach(acc => {
+                // Property casing check for Account object
+                const accNo = acc.HesapNo || acc.hesapNo;
+                const accBalance = acc.Bakiye || acc.bakiye;
+                const accId = acc.HesapId || acc.hesapId;
+
+                const html = `
+                <div class="col-md-4">
+                    <div class="card balance-card">
+                        <div class="card-body">
+                            <h6 class="card-title opacity-75">${t('dash.accountNo')}: ${accNo}</h6>
+                            <div class="d-flex justify-content-between align-items-center mt-3 mb-3">
+                                <div>
+                                    <small class="d-block opacity-75">${t('dash.balance')}</small>
+                                    <span class="balance-amount">₺${accBalance}</span>
+                                </div>
+                                <i class="fas fa-wallet fa-2x opacity-50"></i>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small>ID: ${accId}</small>
+                                <button class="btn btn-sm btn-light text-primary" onclick="openAtmModal(${accId})">
+                                    <i class="fas fa-coins me-1"></i><span>${t('dash.transaction')}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        // --- İŞLEM GEÇMİŞİ & GRAFİK ---
+        async function fetchTransactions() {
+            try {
+                const response = await fetch(`/api/IslemHareketleri/Musteri/${musteriId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) return;
+                const transactions = await response.json();
+                renderTransactions(transactions);
+                renderChart(transactions);
+            } catch (error) {
+                console.error("Geçmiş hatası:", error);
+            }
+        }
+
+        function renderTransactions(transactions) {
+            const tbody = document.getElementById('transactionsList');
+            tbody.innerHTML = '';
+            if (!transactions || transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Henüz işlem geçmişiniz yok.</td></tr>';
+                return;
+            }
+
+            // Helper to get ID safely
+            const getAccId = (a) => a.HesapId || a.hesapId;
+            const myAccountIds = myAccounts.map(getAccId);
+
+            transactions.forEach(trx => {
+                // Trx property casing
+                const trxDate = trx.IslemTarihi || trx.islemTarihi || trx.tarih || trx.Tarih; // Modelde IslemTarihi
+                const trxDesc = trx.Aciklama || trx.aciklama;
+                const trxAmount = trx.Miktar || trx.miktar;
+                const trxSenderId = trx.GonderenHesapId !== undefined ? trx.GonderenHesapId : trx.gonderenHesapId; // Can be null
+                const trxReceiverId = trx.AliciHesapId !== undefined ? trx.AliciHesapId : trx.aliciHesapId; // Can be null
+                // Note: The original code used gonderenId/aliciId but the model has GonderenHesapId/AliciHesapId. 
+                // Let's assume the API returns what matches the model or DTO.
+                // Checking previous code, it used gonderenId/aliciId. Let's support both.
+
+                const gId = trxSenderId !== undefined ? trxSenderId : (trx.gonderenId !== undefined ? trx.gonderenId : null);
+                const aId = trxReceiverId !== undefined ? trxReceiverId : (trx.aliciId !== undefined ? trx.aliciId : null);
+
+
+                let isIncoming = false;
+                let description = trxDesc || t('trans.transfer');
+
+                // Localize 'Sent to' specific string
+                if (description.includes('Sent to')) {
+                    description = description.replace('Sent to', t('trans.sentTo'));
+                }
+
+                let colorClass = '';
+                let sign = '';
+
+                if (myAccountIds.includes(aId)) isIncoming = true;
+
+                // Kendi kendine
+                if (myAccountIds.includes(gId) && myAccountIds.includes(aId)) {
+                    description += ` (${t('trans.toSelf')})`;
+                    colorClass = 'text-primary';
+                    sign = '';
+                }
+                else if (isIncoming) {
+                    colorClass = 'text-success';
+                    sign = '+';
+                    // description += ... (Sender info might not be available directly in simple model)
+                } else {
+                    colorClass = 'text-danger';
+                    sign = '-';
+                    // description += ...
+                }
+
+                if (gId === null) {
+                    colorClass = 'text-success'; sign = '+'; description = t('trans.atmDeposit');
+                }
+                if (aId === null) {
+                    colorClass = 'text-danger'; sign = '-'; description = t('trans.atmWithdraw');
+                }
+
+                // Tarih formatı
+                const dateObj = new Date(trxDate);
+                const dateStr = dateObj.toLocaleDateString('tr-TR') + ' ' + dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+                const html = `
+                    <tr>
+                        <td>${dateStr}</td>
+                        <td>${description}</td>
+                        <td class="${colorClass} fw-bold">${sign}₺${trxAmount}</td>
+                        <td><span class="badge ${colorClass === 'text-success' ? 'bg-success' : (colorClass === 'text-danger' ? 'bg-danger' : 'bg-primary')}">${colorClass === 'text-success' ? t('trans.income') : (colorClass === 'text-danger' ? t('trans.expense') : t('trans.transfer'))}</span></td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function renderChart(transactions) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            let totalIncome = 0;
+            let totalExpense = 0;
+            const getAccId = (a) => a.HesapId || a.hesapId;
+            const myAccountIds = myAccounts.map(getAccId);
+
+            transactions.forEach(trx => {
+                const trxAmount = trx.Miktar || trx.miktar;
+                const trxSenderId = trx.GonderenHesapId !== undefined ? trx.GonderenHesapId : trx.gonderenHesapId;
+                const trxReceiverId = trx.AliciHesapId !== undefined ? trx.AliciHesapId : trx.aliciHesapId;
+
+                const gId = trxSenderId !== undefined ? trxSenderId : (trx.gonderenId !== undefined ? trx.gonderenId : null);
+                const aId = trxReceiverId !== undefined ? trxReceiverId : (trx.aliciId !== undefined ? trx.aliciId : null);
+
+                // Kendi kendine transfer nötr
+                if (myAccountIds.includes(gId) && myAccountIds.includes(aId)) return;
+
+                // ATM Giriş veya Başka hesaptan gelme
+                if (gId === null || myAccountIds.includes(aId)) {
+                    totalIncome += trxAmount;
+                }
+                // ATM Çıkış veya Başka hesaba gitme
+                if (aId === null || myAccountIds.includes(gId)) {
+                    if (myAccountIds.includes(gId) && !myAccountIds.includes(aId)) {
+                        totalExpense += trxAmount;
+                    }
+                }
+            });
+
+            if (myChart) myChart.destroy();
+
+            // Yüzdelik Hesaplama
+            let grandTotal = totalIncome + totalExpense;
+            let incomePct = 0;
+            let expensePct = 0;
+
+            if (grandTotal > 0) {
+                incomePct = Math.round((totalIncome / grandTotal) * 100);
+                expensePct = Math.round((totalExpense / grandTotal) * 100);
+            }
+
+            // Veri Yoksa
+            let chartData = [totalIncome, totalExpense];
+            let bgColors = ['#2ecc71', '#e74c3c'];
+            let labels = [`${t('chart.income')} (%${incomePct})`, `${t('chart.expense')} (%${expensePct})`];
+
+            if (grandTotal === 0) {
+                chartData = [1]; // Boş gri halka
+                bgColors = ['#ecf0f1'];
+                labels = [t('chart.noData'), ''];
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: chartData,
+                        backgroundColor: bgColors,
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.label || '';
+                                    let value = context.raw || 0;
+                                    // Eğer veri yoksa tooltip gösterme
+                                    if (grandTotal === 0) return ' Henüz işlem yok';
+                                    return ` Tutar: ₺${value}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- YAPAY ZEKA ASİSTANI ---
+        async function askAiAdvisor() {
+            const btn = document.getElementById('btnAiAsk');
+            const resultCard = document.getElementById('aiResultCard');
+            const titleEl = document.getElementById('aiTitle');
+            const commentEl = document.getElementById('aiGeneralComment');
+            const listEl = document.getElementById('aiAdviceList');
+
+            // Loading state
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Düşünüyor...';
+            resultCard.classList.add('d-none'); // Öncekini gizle
+
+            try {
+                const response = await fetch('/api/Ai/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ musteriId: musteriId, language: getCurrentLang() })
+                });
+
+                if (!response.ok) throw new Error("AI Servisi yanıt vermedi.");
+
+                const data = await response.json();
+
+                // Backend casing support (API now returns camelCase due to Program.cs settings)
+                const title = data.baslik || data.Baslik;
+                const comment = data.genelYorum || data.GenelYorum;
+                const advices = data.tavsiyeler || data.Tavsiyeler;
+
+                // UI Update
+                titleEl.textContent = title || t('ai.resultTitle');
+                commentEl.textContent = comment || "Veri analiz edildi.";
+
+                listEl.innerHTML = '';
+                if (advices && advices.length > 0) {
+                    advices.forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item border-0 ps-0';
+                        li.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i>${item}`;
+                        listEl.appendChild(li);
+                    });
+                } else {
+                    listEl.innerHTML = `<li class="list-group-item border-0">${t('ai.noRecommendations')}</li>`;
+                }
+
+                // Show Result
+                resultCard.classList.remove('d-none');
+
+                // Scroll to result
+                resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            } catch (error) {
+                console.error(error);
+                alert(t('ai.error'));
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-magic me-2"></i>${t('ai.reanalyze')}`;
+            }
+        }
+
+        // --- AKSİYONLAR ---
+        async function createNewAccount() {
+            if (!confirm(t('account.confirmNew'))) return;
+            const randomHesapNo = "TR" + Math.floor(10000000 + Math.random() * 90000000);
+            try {
+                const res = await fetch('/api/Hesaplars', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ musteriId: musteriId, hesapNo: randomHesapNo, bakiye: 0 })
+                });
+                if (res.ok) { alert(t('account.created')); fetchAccounts(); }
+                else alert(t('account.error'));
+            } catch (e) { console.error(e); }
+        }
+
+        function openAtmModal(hesapId) {
+            document.getElementById('atmHesapId').value = hesapId;
+            document.getElementById('atmMiktar').value = '';
+            new bootstrap.Modal(document.getElementById('atmModal')).show();
+        }
+
+        async function submitAtmTransaction() {
+            const hesapId = document.getElementById('atmHesapId').value;
+            const miktar = document.getElementById('atmMiktar').value;
+            const islemTuru = document.querySelector('input[name="atmIslemTuru"]:checked').value;
+            if (!miktar || miktar <= 0) { alert(t('atm.invalidAmount')); return; }
+            const url = `${islemTuru === 'yatir' ? '/api/Hesaplars/ParaYatir' : '/api/Hesaplars/ParaCek'}?hesapId=${hesapId}&miktar=${miktar}`;
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (res.ok) {
+                    alert("İşlem Başarılı!");
+                    bootstrap.Modal.getInstance(document.getElementById('atmModal')).hide();
+                    fetchAccounts();
+                    fetchTransactions();
+                } else alert(t('account.error') + " " + await res.text());
+            } catch (e) { console.error(e); }
+        }
+
+        function updateTransferDropdown() {
+            const select = document.getElementById('gonderenHesapId');
+            select.innerHTML = '';
+            myAccounts.forEach(acc => {
+                const opt = document.createElement('option');
+                const aId = acc.HesapId || acc.hesapId;
+                const aNo = acc.HesapNo || acc.hesapNo;
+                const aBal = acc.Bakiye || acc.bakiye;
+
+                opt.value = aId;
+                opt.textContent = `${aNo} (₺${aBal})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function showTransferModal() {
+            if (!myAccounts.length) { alert(t('transfer.noAccounts')); return; }
+            new bootstrap.Modal(document.getElementById('transferModal')).show();
+        }
+
+        async function makeTransfer() {
+            const gonderenId = document.getElementById('gonderenHesapId').value;
+            const aliciId = document.getElementById('aliciHesapId').value;
+            const miktar = document.getElementById('miktar').value;
+            const aciklama = document.getElementById('aciklama').value || '';
+
+            if (!gonderenId || !aliciId || !miktar) { alert(t('transfer.fillFields')); return; }
+
+            try {
+                const res = await fetch('/api/Transfer/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ gonderenId: parseInt(gonderenId), aliciId: parseInt(aliciId), miktar: parseFloat(miktar), aciklama: aciklama })
+                });
+
+                if (res.ok) { alert(t('transfer.success')); location.reload(); }
+                else {
+                    let errMsg = t('account.error');
+                    try { const j = await res.json(); errMsg = j.Detay || j.Error || j.Hata || j.Message || j.error || j.message; } catch { errMsg = await res.text(); }
+                    alert(errMsg);
+                }
+            } catch (e) { console.error(e); alert(t('account.error')); }
+        }
+
+        function logout() { localStorage.removeItem('user'); window.location.href = 'index.html'; }
+    </script>
+</body>
+
+</html>

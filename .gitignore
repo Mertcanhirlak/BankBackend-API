@@ -1,0 +1,35 @@
+## [Visual Studio]
+.vs/
+*.user
+*.userosscache
+*.sln.doccache
+
+## [Build Outputs]
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+publish/
+
+## [NuGet]
+.nuget/
+packages/
+*.nupkg
+
+## [Environment Secrets]
+appsettings.Development.json
+# appsettings.json (Genellikle template paylasilir ama kolaylik icin acik birakiyoruz)
+
+## [Logs]
+BankBackend/Logs/
+!BankBackend/Logs/example_log.txt
+*.log
+PROJE_TEKNIK_REHBER.md
+
+## [OS Files]
+.DS_Store
+Thumbs.db
+
+## [Database]
+*.db
+*.localdb

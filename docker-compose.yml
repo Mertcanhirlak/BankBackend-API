@@ -1,0 +1,55 @@
+# =============================================================================
+# PRODUCTION MODE: Fully isolated environment (For GitHub clones)
+# Usage: docker-compose up --build
+# API: http://localhost:8080 | Swagger: http://localhost:8080/swagger
+# =============================================================================
+
+services:
+  bank-db:
+    image: postgres:15
+    container_name: bank-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: bank_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./seed_data.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d bank_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  bank-api:
+    build:
+      context: ./BankBackend
+      dockerfile: Dockerfile
+    container_name: bank-api
+    ports:
+      - "8080:8080"
+    environment:
+      - ConnectionStrings__BankConnection=Host=bank-db;Database=bank_db;Username=postgres;Password=mypassword
+      - ConnectionStrings__RedisConnection=bank-redis:6379
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      bank-db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  redis:
+    image: redis:latest
+    container_name: bank-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes:
+  db-data:

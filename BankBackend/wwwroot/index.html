@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BankBackend - Güvenli Giriş</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header h3 {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #764ba2;
+            border: none;
+            padding: 10px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: #5a367f;
+            transform: translateY(-2px);
+        }
+
+        .form-control {
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        #alertBox {
+            display: none;
+        }
+
+        .lang-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .lang-btn {
+            background: white;
+            border: 2px solid #764ba2;
+            color: #764ba2;
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .lang-btn.active,
+        .lang-btn:hover {
+            background: #764ba2;
+            color: white;
+        }
+    </style>
+    <script src="/js/lang_utils.js"></script>
+</head>
+
+<body>
+
+    <!-- Language Toggle -->
+    <div class="lang-toggle">
+        <button class="lang-btn" data-lang-code="tr" onclick="setLang('tr')">TR</button>
+        <button class="lang-btn" data-lang-code="en" onclick="setLang('en')">EN</button>
+    </div>
+
+    <div class="login-card">
+        <div class="login-header">
+            <h3 data-lang="login.title">Bank Giriş</h3>
+            <p class="text-muted" data-lang="login.subtitle">Hesabınıza erişmek için giriş yapın</p>
+        </div>
+
+        <div id="alertBox" class="alert alert-danger text-center" role="alert"></div>
+
+        <form id="loginForm">
+            <div class="mb-3">
+                <label for="tcKimlik" class="form-label" data-lang="login.tc">T.C. Kimlik No</label>
+                <input type="text" class="form-control" id="tcKimlik" data-lang="login.tc" placeholder="12345678901"
+                    maxlength="11" required>
+            </div>
+            <div class="mb-4">
+                <label for="sifre" class="form-label" data-lang="login.password">Şifre</label>
+                <input type="password" class="form-control" id="sifre" placeholder="******" required>
+            </div>
+            <button type="submit" class="btn btn-primary" data-lang="login.button">Giriş Yap</button>
+        </form>
+        <div class="mt-3 text-center">
+            <small class="text-muted"><span data-lang="login.noAccount">Hesabınız yok mu?</span> <a href="#"
+                    class="text-decoration-none" style="color: #764ba2;" data-lang="login.support">Müşteri
+                    Hizmetleri</a></small>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const tc = document.getElementById('tcKimlik').value;
+            const sifre = document.getElementById('sifre').value;
+            const alertBox = document.getElementById('alertBox');
+
+            // Simple validation
+            if (tc.length !== 11) {
+                showAlert(t('login.error.tcLength'));
+                return;
+            }
+
+            try {
+                // API'ye istek at
+                const response = await fetch('/api/Auth/giris', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tcKimlikNo: tc, sifre: sifre })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Başarılı giriş - Veriyi kaydet
+                    localStorage.setItem('user', JSON.stringify(data));
+
+                    // Rol Kontrolü ve Yönlendirme (Büyük/Küçük harf ve boşluk toleranslı)
+                    const userRole = (data.Rol || data.rol || '').trim().toUpperCase();
+
+                    if (userRole === 'ADMIN' || userRole === 'PATRON') {
+                        window.location.href = 'admin_dashboard.html';
+                    } else {
+                        window.location.href = 'dashboard.html';
+                    }
+                } else {
+                    showAlert(t('login.error.failed'));
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                showAlert(t('login.error.connection'));
+            }
+        });
+
+        function showAlert(msg) {
+            const box = document.getElementById('alertBox');
+            box.textContent = msg;
+            box.style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>
