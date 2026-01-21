@@ -15,7 +15,6 @@
 
 ### 🌟 Ana Panel (Dashboard)
 ![Main Dashboard](assets/tr/main_dashboard.png)
-*(En iyi görselinizi `assets/tr/main_dashboard.png` adıyla kaydedin)*
 
 <details>
 <summary>📂 <b>Diğer ekran görüntülerini görmek için tıklayın (Galeri)</b></summary>
