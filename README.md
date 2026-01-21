@@ -15,7 +15,7 @@
 
 ### 🌟 Dashboard Preview
 ![Main Dashboard](assets/en/main_dashboard.png)
-*(Save your best screenshot as `assets/en/main_dashboard.png`)*
+
 
 <details>
 <summary>📂 <b>Click to view more screenshots (Gallery)</b></summary>
