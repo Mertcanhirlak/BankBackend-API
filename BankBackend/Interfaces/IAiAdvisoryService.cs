@@ -6,5 +6,6 @@ namespace BankBackend.Interfaces
     public interface IAiAdvisoryService
     {
         Task<AiAdviceResponseDto> AnalyzeFinancialStatusAsync(int musteriId, string language = "tr");
+        Task<string> ChatWithAdvisorAsync(int musteriId, string userMessage, string language = "tr");
     }
 }

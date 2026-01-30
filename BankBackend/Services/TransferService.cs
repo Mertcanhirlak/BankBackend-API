@@ -11,6 +11,7 @@ namespace BankBackend.Services
     public class TransferService : ITransferService
     {
         private readonly BankDbContext _context;
+        // Fraud servisi kaldırıldı
 
         public TransferService(BankDbContext context)
         {
@@ -40,9 +41,21 @@ namespace BankBackend.Services
                 if (gonderenHesap.Bakiye < request.Miktar)
                     return new TransferSonucDto { Basarili = false, Mesaj = "Yetersiz bakiye." };
 
+                string aciklama = string.IsNullOrEmpty(request.Aciklama) ? "Para Transferi" : request.Aciklama;
+
+                // Veritabanı sınırı (100 karakter) kontrolü
+                if (aciklama.Length > 100)
+                {
+                    aciklama = aciklama.Substring(0, 97) + "...";
+                }
+
                 // Para Aktarımı
                 gonderenHesap.Bakiye -= request.Miktar;
                 aliciHesap.Bakiye += request.Miktar;
+
+                // EF Core'u değişiklikten haberdar et (Garanti Yöntem)
+                _context.Hesaplars.Update(gonderenHesap);
+                _context.Hesaplars.Update(aliciHesap);
 
                 // İşlem Logu
                 var islem = new IslemHareketleri
@@ -51,7 +64,7 @@ namespace BankBackend.Services
                     AliciHesapId = request.AliciId,
                     Miktar = request.Miktar,
                     IslemTarihi = DateTime.UtcNow,
-                    Aciklama = string.IsNullOrEmpty(request.Aciklama) ? "Para Transferi" : request.Aciklama
+                    Aciklama = aciklama
                 };
 
                 _context.IslemHareketleris.Add(islem);
@@ -69,7 +82,6 @@ namespace BankBackend.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                // Gerçek hayatta burada loglama yapılır (örneğin Serilog ile)
                 return new TransferSonucDto { Basarili = false, Mesaj = $"Bir hata oluştu: {ex.Message}" };
             }
         }

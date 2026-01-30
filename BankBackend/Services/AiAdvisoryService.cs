@@ -102,16 +102,85 @@ namespace BankBackend.Services
                 
                 var content = result?.Content ?? (language == "en" ? "Analysis complete." : "Analiz tamamlandı.");
                 
+                // Basic parsing: Extract lines starting with -, *, or a digit as recommendations
+                var recommendations = content.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Where(line => line.Trim().StartsWith("-") || line.Trim().StartsWith("*") || (line.Trim().Length > 0 && char.IsDigit(line.Trim()[0])))
+                    .Select(line => line.Trim())
+                    .ToList();
+
                 return new AiAdviceResponseDto
                 {
                     Baslik = language == "en" ? "AI Financial Report" : "Yapay Zeka Finans Raporu",
                     GenelYorum = content,
-                    Tavsiyeler = new List<string> { language == "en" ? "Enter OpenAI API Key for detailed analysis." : "Detaylı analiz için OpenAI API Key giriniz." }
+                    Tavsiyeler = recommendations.Any() ? recommendations : new List<string>()
                 };
             }
             catch (Exception)
             {
                 return GenerateMockAdvice(bakiye, language);
+            }
+        }
+
+        public async Task<string> ChatWithAdvisorAsync(int musteriId, string userMessage, string language = "tr")
+        {
+            // 1. Context Gathering (Last 20 transactions for better context)
+            var islemler = await _context.IslemHareketleris
+                .Where(i => i.GonderenHesap.MusteriId == musteriId || i.AliciHesap.MusteriId == musteriId)
+                .OrderByDescending(i => i.IslemTarihi)
+                .Take(20)
+                .Select(i => new { i.Aciklama, i.Miktar, Tarih = i.IslemTarihi.HasValue ? i.IslemTarihi.Value.ToShortDateString() : "Unknown" })
+                .ToListAsync();
+
+            var bakiye = await _context.Hesaplars
+                .Where(h => h.MusteriId == musteriId)
+                .SumAsync(h => h.Bakiye) ?? 0;
+
+            if (!_isAiEnabled)
+            {
+                return language == "en" 
+                    ? "I am currently in demo mode. Please configure OpenAI API Key to chat with me about your finances." 
+                    : "Şu an demo modundayım. Finansal durumunuz hakkında sohbet etmek için lütfen OpenAI API anahtarını yapılandırın.";
+            }
+
+            // 2. Build Prompt
+            var sb = new StringBuilder();
+            if (language == "en")
+            {
+                sb.AppendLine("Context Data:");
+                sb.AppendLine($"Total Balance: {bakiye} TRY.");
+                sb.AppendLine("Recent Transactions:");
+                foreach (var islem in islemler) sb.AppendLine($"- {islem.Tarih}: {islem.Miktar} TRY ({islem.Aciklama})");
+                sb.AppendLine("\nInstruction: You are a helpful financial assistant. Answer the user's question based on the data above. Be concise and friendly.");
+            }
+            else
+            {
+                sb.AppendLine("Bağlam Verisi:");
+                sb.AppendLine($"Toplam Bakiye: {bakiye} TL.");
+                sb.AppendLine("Son İşlemler:");
+                foreach (var islem in islemler) sb.AppendLine($"- {islem.Tarih}: {islem.Miktar} TL ({islem.Aciklama})");
+                sb.AppendLine("\nTalimat: Sen yardımsever bir finans asistanısın. Yukarıdaki verilere dayanarak kullanıcının sorusunu cevapla. Kısa ve samimi ol.");
+            }
+
+            // 3. Ask AI
+            try
+            {
+                if (_kernel == null) return "AI Kernel Error";
+
+                var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+                var history = new ChatHistory();
+                
+                // System Persona
+                history.AddSystemMessage(language == "en" ? "You are a smart banking assistant." : "Sen akıllı bir banka asistanısın.");
+                
+                // User Query with Context
+                history.AddUserMessage(sb.ToString() + $"\n\nUser Question: {userMessage}");
+
+                var result = await chatCompletionService.GetChatMessageContentAsync(history);
+                return result?.Content ?? (language == "en" ? "I couldn't generate a response." : "Bir cevap oluşturamadım.");
+            }
+            catch (Exception ex)
+            {
+                return language == "en" ? $"Error: {ex.Message}" : $"Hata: {ex.Message}";
             }
         }
 

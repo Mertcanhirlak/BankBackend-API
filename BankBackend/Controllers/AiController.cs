@@ -29,5 +29,15 @@ namespace BankBackend.Controllers
             var sonuc = await _aiService.AnalyzeFinancialStatusAsync(request.MusteriId, request.Language);
             return Ok(sonuc);
         }
+
+        /// <summary>
+        /// Chat with the AI Financial Advisor
+        /// </summary>
+        [HttpPost("chat")]
+        public async Task<IActionResult> Chat([FromBody] AiChatRequestDto request)
+        {
+            var response = await _aiService.ChatWithAdvisorAsync(request.MusteriId, request.UserMessage, request.Language);
+            return Ok(new { Response = response });
+        }
     }
 }

@@ -34,7 +34,7 @@ namespace BankBackend.Migrations
                     ad = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     soyad = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     tc_kimlik_no = table.Column<string>(type: "character(11)", fixedLength: true, maxLength: 11, nullable: false),
-                    sifre = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    sifre = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     rol = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, defaultValueSql: "'MUSTERI'::character varying"),
                     kayit_tarihi = table.Column<DateTime>(type: "timestamp without time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP")
                 },

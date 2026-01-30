@@ -119,7 +119,7 @@ public partial class BankDbContext : DbContext
                 .HasDefaultValueSql("'MUSTERI'::character varying")
                 .HasColumnName("rol");
             entity.Property(e => e.Sifre)
-                .HasMaxLength(50)
+                .HasMaxLength(100)
                 .HasColumnName("sifre");
             entity.Property(e => e.Soyad)
                 .HasMaxLength(50)

@@ -18,7 +18,7 @@ CREATE TABLE musteriler (
     ad character varying(50) NOT NULL,
     soyad character varying(50) NOT NULL,
     tc_kimlik_no character(11) NOT NULL,
-    sifre character varying(50) NOT NULL,
+    sifre character varying(100) NOT NULL,
     rol character varying(20) DEFAULT ('MUSTERI'::character varying),
     kayit_tarihi timestamp without time zone DEFAULT (CURRENT_TIMESTAMP),
     CONSTRAINT musteriler_pkey PRIMARY KEY (musteri_id)
