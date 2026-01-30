@@ -9,7 +9,7 @@ namespace BankBackend.Controllers
     /// <summary>
     /// Customer Management Controller - Handles CRUD operations for customers
     /// </summary>
-    [Route("api/[controller]")]
+    [Route("api/musteriler")]
     [ApiController]
     public class MusterilersController : ControllerBase
     {
